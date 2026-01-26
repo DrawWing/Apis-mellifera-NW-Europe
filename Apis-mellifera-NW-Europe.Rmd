@@ -1,0 +1,586 @@
+---
+title: "Analysis of honey bee wing shape from northwestern Europe"
+subtitle: "<https://github.com/DrawWing/Apis-mellifera-NW-Europe>"
+author: 
+  - name: "Julita Machlowska"
+    affiliation: University of Agriculture in Krakow, Poland
+    orcid: 0000-0001-9951-9248
+  - name: "Dariusz Gerula"
+    affiliation: National Institute of Horticulture Research, Poland
+    orcid: 0000-0003-3875-2657
+  - name: "Andrzej Oleksa"
+    affiliation: Kazimierz Wielki University in Bydgoszcz, Poland
+    orcid: 0000-0002-0414-8075
+  - name: "Henk Kok"
+    affiliation: Nederlandse Bijenhoudersvereniging, Netherlands
+  - name: "Grace P. McCormack"
+    affiliation: University of Galway, Ireland
+    orcid: 0000-0003-4960-5185
+  - name: "Alexandra Valentine"
+    affiliation: University of Galway, Ireland
+    orcid: 0009-0002-4748-3735
+  - name: "Lars Kirkerud"
+    affiliation: Norges Birøkterlag, Norway
+  - name: "Per Kryger"
+    affiliation: Aarhus University, Denmark
+    orcid: 0000-0001-5306-3230
+  - name: "Laima Blažytė-Čereškienė"
+    affiliation: Nature Research Centre, Lithuania
+    orcid: 0000-0002-0801-0196
+  - name: "Martin Hasselmann"
+    affiliation: University of Hohenheim, Germany
+    orcid: 0000-0003-3305-4024
+  - name: "Teweldemedhn Gebretinsae Hailu"
+    affiliation: University of Hohenheim, Germany
+    orcid: 0000-0002-3043-995X
+  - name: "Benjamin Rutschmann"
+    affiliation: Agroscope, Switzerland
+    orcid: 0000-0001-6589-6408
+  - name: "Adam Tofilski"
+    affiliation: University of Agriculture in Krakow, Poland
+    orcid: 0000-0002-3898-7029
+date: today
+date-format: iso
+format: 
+  html:
+    self-contained: true
+    toc: true
+bibliography: references.bib
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+	echo = TRUE,
+	message = FALSE,
+	warning = FALSE,
+	tidy = TRUE, tidy.opts = list(arrow=TRUE, indent=2)
+)
+setwd("C:/my_programs/R/Apis-mellifera-NW-Europe")
+
+```
+
+## Libraries
+
+```{r libraries}
+# calculations
+library(geomorph) # GPA 
+library(Morpho) # LDA
+library(stats) # MANOVA
+library(phangorn) # UPGMA
+library(IdentiFlyR)  # classification
+library(reshape2)  # melt
+library(stringr) # str_split_fixed
+library(emmeans) # emmeans
+
+# plotting and visualization
+library(ggplot2)# plots
+ggplot2::theme_set(theme_light())
+library(rnaturalearth) # maps
+library(terra) # raster maps
+library(ggpmisc) # stat_poly_eq
+library(ggpubr)  # ggarange
+
+```
+
+## Variable names
+
+```{r var-names}
+p = 19 # number of landmarks
+k = 2  # number of dimensions, in this case 2 for coordinates (x, y)
+
+# create coordinates names used by IdentiFly
+nameXy = c("x1", "y1")
+for (i in 2:p) {
+  nameXy = c(nameXy, paste0("x", i))
+  nameXy = c(nameXy, paste0("y", i))
+}
+nameXy
+
+# The number of principal components used is 2*p-4 = 34, which is equal to the degrees of freedom
+namePc <- paste0("PC", 1:(2*p-4))
+namePc
+
+# define which landmarks are connected by lines in wireframe graph
+linkX <- c(1, 1, 2, 2, 3,  3, 4,  4,  5, 6, 7,  7,  7, 8,  9,  9, 10, 11, 11, 12, 13, 14, 15, 16, 17)
+linkY <- c(2, 3, 4, 5, 6, 19, 6, 10, 12, 8, 8, 14, 19, 9, 10, 15, 11, 12, 16, 13, 18, 15, 16, 17, 18)
+linkApis <- cbind(linkX, linkY)
+
+```
+
+## Read data
+
+New data collected for this study are available at Zenodo [@machlowska]. There are use also data published during earlier studies [@oleksa2022, @masaquiza2024, @tofilski]
+
+```{r read-data}
+dataRaw <- read.csv("https://zenodo.org/records/17612438/files/BY-raw-coordinates.csv")
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/DE-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/ES_517_573-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/FR-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/GB-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/IE-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/LT-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/NL-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/NO-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/PL_254_922-raw-coordinates.csv"))
+
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/7244070/files/ES-raw-coordinates.csv"))
+dataRaw <- rbind(dataRaw, read.csv("https://zenodo.org/records/7244070/files/PL-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/7244070/files/PT-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17621032/files/CU-raw-coordinates.csv"))
+
+# Read geographic coordinates
+dataGeo <- read.csv("https://zenodo.org/records/17612438/files/BY-data.csv")
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/DE-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/ES_517_573-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/FR-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/GB-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/IE-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/LT-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/NL-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/NO-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/PL_254_922-data.csv"))
+geoDataNew = dataGeo
+
+# number of workers per sample in new datasets
+nColony = table(geoDataNew$sample)
+nColony <- data.frame(nColony, row.names = 1) # move column 1 to row names
+ggplot(nColony, aes(x = Freq)) + 
+  geom_histogram(binwidth = 1)
+summary(nColony$Freq)
+
+dataEU <- read.csv("https://zenodo.org/record/7244070/files/EU-geo-data.csv")
+countryEU = substr(dataEU$sample, 1, 2)
+dataEU = dataEU[countryEU %in% c("ES", "PL", "PT"),]
+dataEU$date = as.numeric(substr(dataEU$date, 1, 4))
+dataGeo = rbind(dataGeo, dataEU)
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17621032/files/CU-data.csv"))
+
+dataGeoSample <- aggregate( dataGeo[c("latitude","longitude","date")], by = list(dataGeo$sample), FUN = mean)
+dataGeoSample <- data.frame(dataGeoSample, row.names = 1) # move column 1 to row names
+
+dataRaw$ISO = substr(dataRaw$file, 1, 2)
+dataGeoSample$ISO = substr(rownames(dataGeoSample), 1, 2)
+dataGeoSample$ISO = as.factor(dataGeoSample$ISO)
+dataGeoSample$country = dataGeoSample$ISO
+dataGeoSample$country <- gsub("BY", "Belarus", dataGeoSample$country)
+dataGeoSample$country <- gsub("CU", "Cuba", dataGeoSample$country)
+dataGeoSample$country <- gsub("DE", "Germany", dataGeoSample$country)
+dataGeoSample$country <- gsub("ES", "Spain", dataGeoSample$country)
+dataGeoSample$country <- gsub("FR", "France", dataGeoSample$country)
+dataGeoSample$country <- gsub("GB", "UK", dataGeoSample$country)
+dataGeoSample$country <- gsub("IE", "Ireland", dataGeoSample$country)
+dataGeoSample$country <- gsub("LT", "Lithuania", dataGeoSample$country)
+dataGeoSample$country <- gsub("NL", "Netherlands", dataGeoSample$country)
+dataGeoSample$country <- gsub("NO", "Norway", dataGeoSample$country)
+dataGeoSample$country <- gsub("PL", "Poland", dataGeoSample$country)
+dataGeoSample$country <- gsub("PT", "Portugal", dataGeoSample$country)
+
+# number of samples per location
+location = paste(round(dataGeoSample$latitude, 1), round(dataGeoSample$longitude, 1))
+nLocation = table(location)
+nLocation = as.data.frame(nLocation)
+
+locationLatLon = str_split_fixed(nLocation$location, " ", 2)
+colnames(locationLatLon) = c("latitude", "longitude")
+locationLatLon = apply(locationLatLon, 2, as.numeric)
+locationLatLon = as.data.frame(locationLatLon)
+nLocation = cbind(nLocation, locationLatLon)
+
+
+location = paste(round(dataGeoSample$latitude, 1), round(dataGeoSample$longitude, 1))
+nLocation = table(location)
+nLocation = as.data.frame(nLocation)
+
+locationLatLon = str_split_fixed(nLocation$location, " ", 2)
+colnames(locationLatLon) = c("latitude", "longitude")
+locationLatLon = apply(locationLatLon, 2, as.numeric)
+locationLatLon = as.data.frame(locationLatLon)
+nLocation = cbind(nLocation, locationLatLon)
+
+```
+
+## Map
+
+```{r map}
+
+# Read elevation data
+# In order to download the TIF file uncomment the two lines below #download.file("https://secure-web.cisco.com/15MbNLDNcvKRdwHz0C8BuWIBGjqhNz-VGOCGhfT0ba5LztPXbyrwb6epoX-FTjajgD8ZFDd0GJRkhcWz3V-WwLn7u53iy9KDz55qixlb5sECZRIKC-2tSg0tc_ZY2hq9U0S10DGheC9vVDLKudF18BT9aItv7zRwYlAnC_SQ2ODKtG9EhyJxY4GV6kntF7KVOTyBn0eT9PmiW_EJvCBFchY50GZBD6Ul9wyCVarVhNMTz91dmugWBBEpPb0St3lArbpanzUMmb4xrnZtX1Ve4AW4V9Px-yU6hq3_xT-TnHlbpX-oILMRTq8lJlFRDLUMMzJdYdy_64T_9KQCiP1M9qTPrJjl3rcIo5lZJoHawqz1DUYYKxe-u4oyQK77hLQL4OaxSZXWylQf-rly0woYPMDTW0YixWICqzpMBof0YhX8/https%3A%2F%2Fgeodata.ucdavis.edu%2Fclimate%2Fworldclim%2F2_1%2Fbase%2Fwc2.1_2.5m_elev.zip", "wc2.1_2.5m_elev.zip")
+#unzip("wc2.1_2.5m_elev.zip")
+
+# or use your local file
+elev <- rast("D:/WorldClim/wc2.1_2.5m_elev.tif")
+
+colorElev <- colorRampPalette(
+  c("#f7f7f7", "#d9d9d9", "#bdbdbd", "#636363", "#303030"),
+  bias = 2
+)
+
+xMin <- -10
+xMax <- 40
+yMin <- 35
+yMax <- 65
+
+# Define extent and crop (terra)
+e <- ext(xMin - 5, xMax + 5, yMin - 5, yMax + 5) 
+elev <- crop(elev, e)
+elevDf <- as.data.frame(elev, xy = TRUE, na.rm = TRUE)
+colnames(elevDf) <- c("longitude", "latitude", "altitude")
+
+dataMap <- ne_countries(scale = "medium", returnclass = "sf")
+
+n <- length(unique(dataGeoSample$country))
+
+ggplot(data = dataMap) +
+  geom_sf() +
+  coord_sf(xlim = c(xMin, xMax), ylim = c(yMin, yMax)) +
+  geom_jitter(
+    data = dataGeoSample,
+    aes(x = longitude, y = latitude, color = country, shape = country),
+    width = 0.5, height = 0.5
+  ) +
+  scale_shape_manual(name = "", values = 1:n) +
+  scale_color_manual(name = "", values = rainbow(n))
+
+ggplot(data = dataMap) +
+  geom_raster(
+    data = elevDf,
+    aes(x = longitude, y = latitude, fill = altitude)
+  ) +
+  scale_fill_gradientn(colours = colorElev(100)) +
+  geom_sf(fill = NA) +
+  coord_sf(xlim = c(xMin, xMax), ylim = c(yMin, yMax)) +
+  geom_point(
+    data = nLocation,
+    aes(x = longitude, y = latitude, size = Freq)
+  ) +
+  scale_size_binned_area(
+    name = "colonies",
+    limits = c(0, 100),
+    breaks = c(0, 5, 10, 20, 40)
+  ) +
+  theme(legend.position = "right")
+
+# only new samples
+geoDataNewSample <- aggregate(
+  geoDataNew[c("latitude", "longitude", "date")],
+  by = list(geoDataNew$sample),
+  FUN = mean
+)
+
+geoDataNewSample <- data.frame(geoDataNewSample, row.names = 1) 
+geoDataNewSample$ISO <- substr(rownames(geoDataNewSample), 1, 2)
+
+ggplot(data = dataMap) +
+  geom_sf() +
+  coord_sf(xlim = c(xMin, xMax), ylim = c(yMin, yMax)) +
+  geom_jitter(
+    data = geoDataNewSample,
+    aes(x = longitude, y = latitude, color = ISO, shape = ISO),
+    width = 0.5, height = 0.5
+  ) +
+  scale_shape_manual(name = "", values = 1:n) +
+  scale_color_manual(name = "", values = rainbow(n))
+
+
+```
+
+## GPA alignment
+
+```{r GPA}
+# Convert from 2D array to 3D array
+wing3D <- arrayspecs(dataRaw[ ,nameXy], p, k)
+dimnames(wing3D)[[3]] <- dataRaw$file
+
+# Align the coordinates using Generalized Procrustes Analysis 
+GPA <- gpagen(wing3D, print.progress = FALSE)
+# Convert from 3D array to 2D array
+dataAligned <- two.d.array(GPA$coords) 
+# rename column names from 1.X, 1.Y to x1, y1 ...
+colnames(dataAligned) <- gsub("([0-9]+)\\.([XY])", "\\L\\2\\1",
+                                    colnames(dataAligned), perl = TRUE) 
+
+# Average coorinates within samples
+dataRaw$sample <- substr(dataRaw$file, 1, 7)
+dataSample <- aggregate(dataAligned, by = list(dataRaw$sample), FUN = mean)
+dataSample <- data.frame(dataSample, row.names = 1) # move column 1 to row names
+dataSample = merge(dataSample, dataGeoSample, by = 0)
+dataSample <- data.frame(dataSample, row.names = 1) # move column 1 to row names
+
+```
+
+## Sample size
+
+```{r sample}
+
+nrow(geoDataNew) # number of new wings
+geoDataNew$ISO = substr(geoDataNew$file, 1, 2)
+table(geoDataNew$ISO)# number of new wings per country
+nrow(geoDataNewSample) # number of new samples
+table(geoDataNewSample$ISO) # number of new samples per country
+
+nrow(dataRaw) # number of all wings
+table(dataRaw$ISO)# number of all wings per country
+nrow(dataGeoSample) # number of all samples
+table(dataGeoSample$ISO) # number of all samples per country
+
+```
+
+## PCA
+
+```{r PCA}
+PCA <- prcomp(dataSample[, nameXy], scale. = TRUE)
+PCscores <- as.data.frame(PCA$x[,namePc])
+PCscores$country = as.factor(dataSample$country)
+
+# create plot labels
+variance.tab <- summary(PCA)$importance
+variance <- variance.tab["Proportion of Variance", "PC1"]
+variance <- round(100 * variance, 1)
+xLabel <- paste0("PC1 (", variance, "%)")
+variance <- variance.tab["Proportion of Variance", "PC2"]
+variance <- round(100 * variance, 1)
+yLabel <- paste0("PC2 (", variance, "%)")
+
+n = length(unique(PCscores$country))
+figPca = ggplot(PCscores, aes(x = PC1, y = PC2, shape = country, color = country)) +
+  geom_point() +
+  scale_shape_manual(name ="", values = c(1:n)) +
+  scale_color_manual(name ="", values = rainbow(n)) +
+  stat_ellipse() + 
+  xlab(xLabel) + ylab(yLabel)
+figPca
+
+```
+
+## LDA
+
+```{r lda}
+# use equal prior probability for all groups
+n.gr <- length(unique(PCscores$country)) # number of groups
+lda <- CVA(PCscores[namePc], PCscores$country,
+                  rounds = 10000, cv = TRUE,
+                  prior = rep(1/n.gr, n.gr))
+ldaScores <- as.data.frame(lda$CVscores)
+colnames(ldaScores) <- gsub("CV ", "LD", colnames(ldaScores))
+# ldaScores <- cbind(sample.dataGeo, ldaScores)
+ldaScores$country = PCscores$country
+ldaScores$ISO = dataGeoSample$ISO
+
+figLda = ggplot(ldaScores, aes(x = LD1, y = LD2, shape = country, color = country)) +
+  geom_point() +
+  scale_shape_manual(name ="", values = c(1:n)) +
+  scale_color_manual(name ="", values = rainbow(n)) +
+  stat_ellipse()
+figLda
+ggarrange(figPca, figLda, 
+          labels = c("a", "b"), 
+          font.label = list(size = 12, face = "bold"),  
+          ncol = 2, nrow = 1, 
+          common.legend = TRUE, legend = "bottom") 
+
+# Confusion matrix
+# Classification of the dataSample to groups
+ldaclass <- typprobClass(lda$CVscores, groups = ldaScores$ISO, outlier = 0)
+print(ldaclass)
+
+# Mahalanobis distances between groups
+knitr::kable(as.data.frame(as.matrix(lda$Dist$GroupdistMaha)), digits = 3)
+# pairwise probabilities of differences between groups
+knitr::kable(as.data.frame(as.matrix(lda$Dist$probsMaha)), digits = 5)
+
+# wing shape differs significantely between countries
+MANOVA = manova(as.matrix(cbind(PCscores[, namePc])) ~ country, PCscores)
+summary(MANOVA)
+
+```
+
+## Classification as lineages
+
+Comparison with lineages dataset <a href="#Nawrocka et al., 2018a">Nawrocka et al., (2018a)</a> and <a href="#Nawrocka et al., 2018b">Nawrocka et al., (2018b)</a>
+
+```{r colony-lin}
+
+idData <- xml2gmLdaData("https://zenodo.org/records/14054009/files/apis-mellifera-lineage.dw.xml")
+idM = gmLdaData2id(idData,
+                  dataSample[,nameXy],
+                  average = FALSE)
+idM$plot
+tab = table(idM$id$group)
+tab
+prop.table(tab)
+
+tab = table(idM$id$group, dataSample$ISO)
+tab
+round(prop.table(tab, margin = 2), digits = 3)
+
+pTab = as.data.frame(idM$P)
+sums = rowSums(pTab)
+pTab = pTab/sums
+
+pTabLong <- pTab
+pTabLong$sample <- rownames(pTabLong)
+pTabLong <- melt(pTabLong, id.vars = c("sample"))
+pTabLong$gr <- substr(pTabLong$sample, 1, 2)  # short 2 letter name
+
+ggplot(pTabLong, aes(sample, value, fill = variable)) +
+  geom_col(width = 1) +
+  scale_fill_manual(name="classified as lineage", values = rainbow(4)) +
+  facet_grid(~gr, switch = "x", scales = "free", space = "free") +
+  theme_minimal() + 
+  labs(x = NULL, y = NULL) +
+  scale_y_continuous(expand = c(0, 0)) +
+  guides(fill=guide_legend(nrow=1, byrow=TRUE)) +
+  theme(panel.spacing.x = unit(0.2, "lines"), axis.text.x = element_blank(),
+        legend.position = "top") 
+
+# countrySmallN = c("BY", "CU", "DE", "FR", "GB")
+countrySmallN = c("Belarus", "Cuba", "Germany", "France", "UK")
+# countries with large N
+pTabLong <- pTab
+pTabLong = pTabLong[!dataSample$country %in% countrySmallN, ]
+pTabLong$sample <- rownames(pTabLong)
+pTabLong <- melt(pTabLong, id.vars = c("sample"))
+pTabLong$gr <- substr(pTabLong$sample, 1, 2)  # short 2 letter name
+figAdmA = ggplot(pTabLong, aes(sample, value, fill = variable)) +
+  geom_col(width = 1) +
+  scale_fill_manual(name="classified as lineage", values = rainbow(4)) +
+  facet_grid(~gr, switch = "x", scales = "free", space = "free") +
+  theme_minimal() + 
+  labs(x = NULL, y = NULL) +
+  scale_y_continuous(expand = c(0, 0)) +
+  guides(fill=guide_legend(nrow=1, byrow=TRUE)) +
+  theme(panel.spacing.x = unit(0.2, "lines"), axis.text.x = element_blank(),
+        legend.position = "top") 
+
+# countries with small N
+pTabLong <- pTab
+pTabLong = pTabLong[dataSample$country %in% countrySmallN, ]
+pTabLong$sample <- rownames(pTabLong)
+pTabLong <- melt(pTabLong, id.vars = c("sample"))
+pTabLong$gr <- substr(pTabLong$sample, 1, 2)  # short 2 letter name
+figAdmB = ggplot(pTabLong, aes(sample, value, fill = variable)) +
+  geom_col(width = 1) +
+  scale_fill_manual(name="classified as lineage", values = rainbow(4)) +
+  facet_grid(~gr, switch = "x", scales = "free", space = "free") +
+  theme_minimal() + 
+  labs(x = NULL, y = NULL) +
+  scale_y_continuous(expand = c(0, 0)) +
+  guides(fill=guide_legend(nrow=1, byrow=TRUE)) +
+  theme(panel.spacing.x = unit(0.2, "lines"), axis.text.x = element_blank(),
+        legend.position = "top") + 
+  theme(
+    axis.text.y  = element_blank(),
+  )
+
+figAdm = ggarrange(figAdmA, figAdmB, 
+          ncol = 2, nrow = 1, 
+          widths = c(0.66, 0.33),
+          common.legend = TRUE, legend = "top")
+
+ggarrange(figAdmA, figAdmB, 
+          labels = c("a", "b"), label.y = 1.05, 
+          font.label = list(size = 12, face = "bold"),
+          ncol = 2, nrow = 1, 
+          widths = c(0.66, 0.33),
+          common.legend = TRUE, legend = "top")
+
+dataGeoSample$lineage  = idM$id$group
+
+figMapClass = ggplot(data = dataMap) + geom_sf() + 
+  geom_jitter(data = dataGeoSample, aes(x = longitude, y = latitude, color = lineage), width = 0.4, height = 0.4, size = 0.7) + 
+  coord_sf(xlim = c(xMin, xMax), ylim = c(yMin, yMax)) +
+  scale_color_manual(name = "", values = rainbow(4))
+figMapClass
+
+ggarrange(figAdm, figMapClass,
+          labels = c("a", "b"), 
+          font.label = list(size = 12, face = "bold"),
+          ncol = 1, nrow = 2,
+          heights = c(0.5, 1.5))
+
+ggarrange(figAdmA, figAdmB, figMapClass,
+          labels = c("a", "b", "c"), label.y = 1.2,
+          font.label = list(size = 12, face = "bold"),
+          ncol = 1, nrow = 3,
+          heights = c(1, 1, 3),
+          common.legend = TRUE, legend = "top" 
+          )
+
+ggarrange(
+  figAdmA, figAdmB, figMapClass,
+  labels = c("a", "b", "c"),
+  font.label = list(size = 12, face = "bold"),
+  ncol = 2, nrow = 2,
+  layout_matrix = rbind(c(1, 2), c(3, 3)),
+  widths = c(0.66, 0.33),
+  heights = c(1, 3),
+  common.legend = TRUE, legend = "top"
+)
+
+# map of lineage A
+ggplot(data = dataMap) + geom_sf() + 
+  geom_jitter(data = dataGeoSample[dataGeoSample$lineage == "A", ], 
+              aes(x = longitude, y = latitude), width = 0.4, height = 0.4) + 
+  coord_sf(xlim = c(xMin, xMax), ylim = c(yMin, yMax))
+
+# map of lineage C
+ggplot(data = dataMap) + geom_sf() + 
+  geom_jitter(data = dataGeoSample[dataGeoSample$lineage == "C", ], 
+              aes(x = longitude, y = latitude), width = 0.4, height = 0.4) + 
+  coord_sf(xlim = c(xMin, xMax), ylim = c(yMin, yMax))
+
+# map of lineage M
+ggplot(data = dataMap) + geom_sf() + 
+  geom_jitter(data = dataGeoSample[dataGeoSample$lineage == "M", ], 
+              aes(x = longitude, y = latitude), width = 0.4, height = 0.4) + 
+  coord_sf(xlim = c(xMin, xMax), ylim = c(yMin, yMax))
+
+# map of lineage O
+ggplot(data = dataMap) + geom_sf() + 
+  geom_jitter(data = dataGeoSample[dataGeoSample$lineage == "O", ], 
+              aes(x = longitude, y = latitude), width = 0.4, height = 0.4) + 
+  coord_sf(xlim = c(xMin, xMax), ylim = c(yMin, yMax))
+
+```
+
+## Changes in time
+
+```{r time}
+
+dataId = cbind(dataSample[, c("latitude", "longitude", "date", "country")], idM$MD2, idM$LD)
+dataId$sample = row.names(dataSample)
+dataPl = dataId[dataId$country == "Poland", ]
+tmp = str_split_fixed(dataPl$sample, "-", 2)
+tmp = as.numeric(tmp[,2])
+dataPl$sampleNr = tmp
+
+dataPl$years = ifelse(dataPl$date<2016,"before 2016", "after 2016")
+dataPl$years = factor(dataPl$years, levels = c("before 2016", "after 2016"))
+dataPl$population = ifelse((dataPl$sampleNr > 253 & dataPl$sampleNr < 680),
+                           "protected", "unprotected")
+dataPl$population = as.factor(dataPl$population)
+table(dataPl$population, dataPl$years)
+
+fit <- lm(M ~ years*population, data=dataPl)
+anova(fit)
+
+emm_date_by_pop <- emmeans(fit, ~ years | population)
+pairs(emm_date_by_pop, adjust = "tukey")   
+
+emm_pop_by_date <- emmeans(fit, ~ population | years)
+pairs(emm_pop_by_date, adjust = "tukey")
+
+ggplot(dataPl, aes(x=population, y=M)) + 
+  geom_boxplot(aes(fill=years)) +
+    scale_fill_brewer(palette="BuPu") +
+  labs(y ="distance to lineage M")
+
+```
+
+## Information about session
+
+```{r info}
+
+sessionInfo()
+
+```
