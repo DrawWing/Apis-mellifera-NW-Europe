@@ -34,7 +34,7 @@ author:
     affiliation: University of Hohenheim, Germany
     orcid: 0000-0002-3043-995X
   - name: "Benjamin Rutschmann"
-    affiliation: Agroscope, Switzerland
+    affiliation: University of Würzburg, Germany
     orcid: 0000-0001-6589-6408
   - name: "Adam Tofilski"
     affiliation: University of Agriculture in Krakow, Poland
@@ -46,6 +46,7 @@ format:
     self-contained: true
     toc: true
 bibliography: references.bib
+csl: apa-6th-edition.csl
 ---
 
 ```{r setup, include = FALSE}
@@ -110,19 +111,19 @@ linkApis <- cbind(linkX, linkY)
 
 ## Read data
 
-New data collected for this study are available at Zenodo [@machlowska]. There are use also data published during earlier studies [@oleksa2022, @masaquiza2024, @tofilski]
+New data collected for this study are available at Zenodo [@machlowska2025]. There are use also data published during earlier studies [@oleksa2022; @tofilski2025]
 
 ```{r read-data}
-dataRaw <- read.csv("https://zenodo.org/records/17612438/files/BY-raw-coordinates.csv")
-dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/DE-raw-coordinates.csv"))
-dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/ES_517_573-raw-coordinates.csv"))
-dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/FR-raw-coordinates.csv"))
-dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/GB-raw-coordinates.csv"))
-dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/IE-raw-coordinates.csv"))
-dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/LT-raw-coordinates.csv"))
-dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/NL-raw-coordinates.csv"))
-dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/NO-raw-coordinates.csv"))
-dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17612438/files/PL_254_922-raw-coordinates.csv"))
+dataRaw <- read.csv("https://zenodo.org/records/18845767/files/BY-raw-coordinates.csv")
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/18845767/files/DE-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/18845767/files/ES_517_573-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/18845767/files/FR-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/18845767/files/GB-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/18845767/files/IE-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/18845767/files/LT-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/18845767/files/NL-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/18845767/files/NO-raw-coordinates.csv"))
+dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/18845767/files/PL_254_922-raw-coordinates.csv"))
 
 dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/7244070/files/ES-raw-coordinates.csv"))
 dataRaw <- rbind(dataRaw, read.csv("https://zenodo.org/records/7244070/files/PL-raw-coordinates.csv"))
@@ -130,16 +131,16 @@ dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/7244070/files/PT-r
 dataRaw = rbind(dataRaw, read.csv("https://zenodo.org/records/17621032/files/CU-raw-coordinates.csv"))
 
 # Read geographic coordinates
-dataGeo <- read.csv("https://zenodo.org/records/17612438/files/BY-data.csv")
-dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/DE-data.csv"))
-dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/ES_517_573-data.csv"))
-dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/FR-data.csv"))
-dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/GB-data.csv"))
-dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/IE-data.csv"))
-dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/LT-data.csv"))
-dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/NL-data.csv"))
-dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/NO-data.csv"))
-dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/17612438/files/PL_254_922-data.csv"))
+dataGeo <- read.csv("https://zenodo.org/records/18845767/files/BY-data.csv")
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/18845767/files/DE-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/18845767/files/ES_517_573-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/18845767/files/FR-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/18845767/files/GB-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/18845767/files/IE-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/18845767/files/LT-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/18845767/files/NL-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/18845767/files/NO-data.csv"))
+dataGeo = rbind(dataGeo, read.csv("https://zenodo.org/records/18845767/files/PL_254_922-data.csv"))
 geoDataNew = dataGeo
 
 # number of workers per sample in new datasets
@@ -414,7 +415,7 @@ summary(MANOVA)
 
 ## Classification as lineages
 
-Comparison with lineages dataset <a href="#Nawrocka et al., 2018a">Nawrocka et al., (2018a)</a> and <a href="#Nawrocka et al., 2018b">Nawrocka et al., (2018b)</a>
+Comparison with lineages dataset [@nawrocka2018; @nawrocka2018a]
 
 ```{r colony-lin}
 
@@ -564,6 +565,10 @@ ggplot(dataPl, aes(x=population, y=M)) +
 
 ```
 
+## References {-}
+  
+<div id="refs"></div>
+  
 ## Information about session
 
 ```{r info}
