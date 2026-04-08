@@ -39,7 +39,7 @@ author:
   - name: "Adam Tofilski"
     affiliation: University of Agriculture in Krakow, Poland
     orcid: 0000-0002-3898-7029
-date: today
+date-modified: last-modified
 date-format: iso
 format: 
   html:
@@ -56,7 +56,6 @@ knitr::opts_chunk$set(
 	warning = FALSE,
 	tidy = TRUE, tidy.opts = list(arrow=TRUE, indent=2)
 )
-setwd("C:/my_programs/R/Apis-mellifera-NW-Europe")
 
 ```
 
@@ -67,7 +66,6 @@ setwd("C:/my_programs/R/Apis-mellifera-NW-Europe")
 library(geomorph) # GPA 
 library(Morpho) # LDA
 library(stats) # MANOVA
-library(phangorn) # UPGMA
 library(IdentiFlyR)  # classification
 library(reshape2)  # melt
 library(stringr) # str_split_fixed
@@ -78,9 +76,9 @@ library(ggplot2)# plots
 ggplot2::theme_set(theme_light())
 library(rnaturalearth) # maps
 library(terra) # raster maps
-library(ggpmisc) # stat_poly_eq
+library(sf) # st_transform
 library(ggpubr)  # ggarange
-library(ggforce)
+library(ggforce) # geom_arc_bar
 
 ```
 
@@ -111,7 +109,7 @@ linkApis <- cbind(linkX, linkY)
 
 ## Read data
 
-New data collected for this study are available at Zenodo [@machlowska2025]. There are use also data published during earlier studies [@oleksa2022; @tofilski2025]
+New data collected for this study are available at Zenodo [@machlowska2026]. There are use also data published during earlier studies [@oleksa2022; @tofilski2025]
 
 ```{r read-data}
 dataRaw <- read.csv("https://zenodo.org/records/18845767/files/BY-raw-coordinates.csv")
@@ -205,9 +203,6 @@ country = aggregate( dataGeoSample[c("country")], by = list(dataGeoSample$ISO), 
 dataGeoCountry = merge(dataGeoCountry, country, by="Group.1")
 
 colnames(dataGeoCountry)[1] = "ISO"
-# dataGeoCountry$ISO = unique(dataGeoSample$ISO)
-# dataGeoCountry <- data.frame(dataGeoCountry, row.names = 1) # move column 1 to row names
-# dataGeoCountry = dataGeoCountry[row.names(dataGeoCountry)!="Cuba",]
 
 ```
 
@@ -253,6 +248,7 @@ ggplot(data = dataMap) +
   scale_shape_manual(name = "", values = 1:n) +
   scale_color_manual(name = "", values = rainbow(n))
 
+# Figure 1
 ggplot(data = dataMap) +
   geom_raster(
     data = elevDf,
@@ -391,6 +387,7 @@ ggplot(ldaScores, aes(x = LD1, y = LD3, shape = country, color = country)) +
   scale_color_manual(name ="", values = rainbow(n)) +
   stat_ellipse()
 
+# Figure 3
 ggarrange(figPca, figLda, 
           labels = c("a", "b"), 
           font.label = list(size = 12, face = "bold"),  
@@ -417,7 +414,7 @@ summary(MANOVA)
 
 Comparison with lineages dataset [@nawrocka2018; @nawrocka2018a]
 
-```{r colony-lin}
+```{r lineages}
 
 idData <- xml2gmLdaData("https://zenodo.org/records/14054009/files/apis-mellifera-lineage.dw.xml")
 idM = gmLdaData2id(idData,
@@ -452,7 +449,6 @@ ggplot(pTabLong, aes(sample, value, fill = variable)) +
   theme(panel.spacing.x = unit(0.2, "lines"), axis.text.x = element_blank(),
         legend.position = "top") 
 
-# countrySmallN = c("BY", "CU", "DE", "FR", "GB")
 countrySmallN = c("Belarus", "Cuba", "Germany", "France", "UK")
 # countries with large N
 pTabLong <- pTab
@@ -487,9 +483,7 @@ figAdmB = ggplot(pTabLong, aes(sample, value, fill = variable)) +
   guides(fill=guide_legend(nrow=1, byrow=TRUE)) +
   theme(panel.spacing.x = unit(0.2, "lines"), axis.text.x = element_blank(),
         legend.position = "top") + 
-  theme(
-    axis.text.y  = element_blank(),
-  )
+  theme(axis.text.y  = element_blank())
 
 figAdm = ggarrange(figAdmA, figAdmB, 
           ncol = 2, nrow = 1, 
@@ -509,20 +503,37 @@ tabProp = tabProp[-2,]
 countryLin = as.data.frame(tabProp)
 colnames(countryLin) <- c("ISO", "lineage", "Freq")
 countryLin = merge(countryLin, dataGeoCountry, by="ISO")
+countryLin$longitude[countryLin$ISO == "BY"] <- 30 # move Belarus plot
+countryLin$ISO = gsub("GB", "UK", countryLin$ISO) # move Belarus plot
 
-ggplot(countryLin) + 
-  geom_arc_bar(aes(x0 = longitude, y0 = latitude, r0 = 0, r = 1.5, amount = Freq, fill = lineage), stat = "pie") + 
-  geom_text(aes(x = longitude, y = latitude, label = country)) +  
-  scale_fill_manual(name = "", values = rainbow(4)) +
-  coord_cartesian(xlim = c(xMin, xMax), ylim = c(yMin, yMax)) +
-  coord_fixed() 
+# Plot map with circular pie charts
+dataMap_proj <- st_transform(dataMap, 3035) # Europe projection
 
-figMapClass = ggplot(data = dataMap) + geom_sf() + 
-  geom_arc_bar(data = countryLin, aes(x0 = longitude, y0 = latitude, r0 = 0, r = 1, amount = Freq, fill = lineage), stat = "pie")  +
-  scale_fill_manual(name = "", values = rainbow(4)) +
-  coord_sf(xlim = c(xMin, xMax), ylim = c(yMin, yMax)) 
+europe_bbox <- st_bbox(c(xmin = xMin, xmax = xMax,
+                         ymin = yMin, ymax = 70),
+                       crs = st_crs(4326)) # Crop to Europe
+europe_bbox <- st_transform(st_as_sfc(europe_bbox), 3035)
+dataMap_europe <- st_crop(dataMap_proj, europe_bbox)
+
+# Convert and project pie centers
+countryLin_sf <- st_as_sf(countryLin,
+                         coords = c("longitude", "latitude"),
+                         crs = 4326)
+countryLin_proj <- st_transform(countryLin_sf, 3035)
+coords <- st_coordinates(countryLin_proj)
+countryLin_proj <- cbind(countryLin, coords)
+
+# r: radius in meters (adjust size)
+figMapClass = ggplot() +
+  geom_sf(data = dataMap_europe) +
+  geom_arc_bar(data = countryLin_proj, aes(x0 = X, y0 = Y, r0 = 0, r = 150000, amount = Freq, fill = lineage), stat = "pie") +
+  geom_text(data = countryLin_proj, aes(x = X, y = Y, label = ISO), vjust = 2.5) +
+  scale_fill_manual(values = rainbow(4)) +
+  coord_sf(expand = FALSE) + 
+  theme(legend.position = "none", axis.title.x=element_blank(), axis.title.y=element_blank())
 figMapClass
 
+# Figure 4
 ggarrange(figAdm, figMapClass,
           labels = c("a", "b"), 
           font.label = list(size = 12, face = "bold"),
@@ -558,6 +569,7 @@ pairs(emm_date_by_pop, adjust = "tukey")
 emm_pop_by_date <- emmeans(fit, ~ population | years)
 pairs(emm_pop_by_date, adjust = "tukey")
 
+# Figure 5
 ggplot(dataPl, aes(x=population, y=M)) + 
   geom_boxplot(aes(fill=years)) +
     scale_fill_brewer(palette="BuPu") +
