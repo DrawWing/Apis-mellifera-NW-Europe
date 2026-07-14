@@ -215,7 +215,7 @@ colnames(dataGeoCountry)[1] = "ISO"
 #unzip("wc2.1_2.5m_elev.zip")
 
 # or use your local file
-elev <- rast("D:/WorldClim/wc2.1_2.5m_elev.tif")
+elev <- rast("X:/WorldClim/wc2.1_2.5m_elev.tif")
 
 colorElev <- colorRampPalette(
   c("#f7f7f7", "#d9d9d9", "#bdbdbd", "#636363", "#303030"),
@@ -572,8 +572,11 @@ pairs(emm_pop_by_date, adjust = "tukey")
 # Figure 5
 ggplot(dataPl, aes(x=population, y=M)) + 
   geom_boxplot(aes(fill=years)) +
-    scale_fill_brewer(palette="BuPu") +
-  labs(y ="distance to lineage M")
+  scale_fill_brewer(palette="BuPu") +
+  labs(y ="distance to lineage M",
+       fill = "samples collected"
+  ) +
+  theme(legend.position = "bottom")
 
 ```
 
