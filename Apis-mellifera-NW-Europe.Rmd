@@ -109,7 +109,7 @@ linkApis <- cbind(linkX, linkY)
 
 ## Read data
 
-New data collected for this study are available at Zenodo [@machlowska2026]. There are use also data published during earlier studies [@oleksa2022; @tofilski2025]
+New data collected for this study are available at Zenodo [@machlowska2026]. There are also used data from earlier studies [@oleksa2022; @tofilski2025]
 
 ```{r read-data}
 dataRaw <- read.csv("https://zenodo.org/records/18845767/files/BY-raw-coordinates.csv")
@@ -160,6 +160,7 @@ dataGeoSample <- data.frame(dataGeoSample, row.names = 1) # move column 1 to row
 
 dataRaw$ISO = substr(dataRaw$file, 1, 2)
 dataGeoSample$ISO = substr(rownames(dataGeoSample), 1, 2)
+
 dataGeoSample$ISO = as.factor(dataGeoSample$ISO)
 dataGeoSample$country = dataGeoSample$ISO
 dataGeoSample$country <- gsub("BY", "Belarus", dataGeoSample$country)
@@ -211,10 +212,6 @@ colnames(dataGeoCountry)[1] = "ISO"
 ```{r map}
 
 # Read elevation data
-# In order to download the TIF file uncomment the two lines below #download.file("https://secure-web.cisco.com/15MbNLDNcvKRdwHz0C8BuWIBGjqhNz-VGOCGhfT0ba5LztPXbyrwb6epoX-FTjajgD8ZFDd0GJRkhcWz3V-WwLn7u53iy9KDz55qixlb5sECZRIKC-2tSg0tc_ZY2hq9U0S10DGheC9vVDLKudF18BT9aItv7zRwYlAnC_SQ2ODKtG9EhyJxY4GV6kntF7KVOTyBn0eT9PmiW_EJvCBFchY50GZBD6Ul9wyCVarVhNMTz91dmugWBBEpPb0St3lArbpanzUMmb4xrnZtX1Ve4AW4V9Px-yU6hq3_xT-TnHlbpX-oILMRTq8lJlFRDLUMMzJdYdy_64T_9KQCiP1M9qTPrJjl3rcIo5lZJoHawqz1DUYYKxe-u4oyQK77hLQL4OaxSZXWylQf-rly0woYPMDTW0YixWICqzpMBof0YhX8/https%3A%2F%2Fgeodata.ucdavis.edu%2Fclimate%2Fworldclim%2F2_1%2Fbase%2Fwc2.1_2.5m_elev.zip", "wc2.1_2.5m_elev.zip")
-#unzip("wc2.1_2.5m_elev.zip")
-
-# or use your local file
 elev <- rast("X:/WorldClim/wc2.1_2.5m_elev.tif")
 
 colorElev <- colorRampPalette(
@@ -412,7 +409,7 @@ summary(MANOVA)
 
 ## Classification as lineages
 
-Comparison with lineages dataset [@nawrocka2018; @nawrocka2018a]
+Comparison with lineages dataset [@nawrocka2018]
 
 ```{r lineages}
 
@@ -437,6 +434,7 @@ pTabLong <- pTab
 pTabLong$sample <- rownames(pTabLong)
 pTabLong <- melt(pTabLong, id.vars = c("sample"))
 pTabLong$gr <- substr(pTabLong$sample, 1, 2)  # short 2 letter name
+pTabLong$gr = gsub("GB", "UK", pTabLong$gr)
 
 ggplot(pTabLong, aes(sample, value, fill = variable)) +
   geom_col(width = 1) +
@@ -456,6 +454,8 @@ pTabLong = pTabLong[!dataSample$country %in% countrySmallN, ]
 pTabLong$sample <- rownames(pTabLong)
 pTabLong <- melt(pTabLong, id.vars = c("sample"))
 pTabLong$gr <- substr(pTabLong$sample, 1, 2)  # short 2 letter name
+pTabLong$gr = gsub("GB", "UK", pTabLong$gr)
+
 figAdmA = ggplot(pTabLong, aes(sample, value, fill = variable)) +
   geom_col(width = 1) +
   scale_fill_manual(name="classified as lineage", values = rainbow(4)) +
@@ -473,6 +473,8 @@ pTabLong = pTabLong[dataSample$country %in% countrySmallN, ]
 pTabLong$sample <- rownames(pTabLong)
 pTabLong <- melt(pTabLong, id.vars = c("sample"))
 pTabLong$gr <- substr(pTabLong$sample, 1, 2)  # short 2 letter name
+pTabLong$gr = gsub("GB", "UK", pTabLong$gr)
+
 figAdmB = ggplot(pTabLong, aes(sample, value, fill = variable)) +
   geom_col(width = 1) +
   scale_fill_manual(name="classified as lineage", values = rainbow(4)) +
@@ -504,7 +506,7 @@ countryLin = as.data.frame(tabProp)
 colnames(countryLin) <- c("ISO", "lineage", "Freq")
 countryLin = merge(countryLin, dataGeoCountry, by="ISO")
 countryLin$longitude[countryLin$ISO == "BY"] <- 30 # move Belarus plot
-countryLin$ISO = gsub("GB", "UK", countryLin$ISO) # move Belarus plot
+countryLin$ISO = gsub("GB", "UK", countryLin$ISO)
 
 # Plot map with circular pie charts
 dataMap_proj <- st_transform(dataMap, 3035) # Europe projection
